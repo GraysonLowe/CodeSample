@@ -9,12 +9,12 @@
 #include <unistd.h>
 #include "version.h"
 #include "mydash.h"
+#include "log.h"
 #include "list.h"
 #include "common.h"
 #include <errno.h>
 #include <signal.h>
 #include "jobs.h"
-
 
 /*Print status of each job, justDone flag only prints out jobs that have finished since last call*/
 void jobStatus(void *list,int justDone){
@@ -44,6 +44,7 @@ void jobStatus(void *list,int justDone){
                         if(strcmp("Running",j->status)==0){
                                 strcpy(j->status,"Done");
                                 if(justDone){
+
                                         fprintf(stderr,"[%d]%s %s\n",j->num,j->status,j->cmd);
                                         erase_at(list,i);        
                                         freeJob(j);
@@ -60,19 +61,18 @@ void jobStatus(void *list,int justDone){
                 if(!justDone&&!removed){
                         if(strcmp(j->status,"Done")==0)
                         {
-                                fprintf(stderr,"[%d]%s %s\n",j->num,j->status,j->cmd);
+                             fprintf(stderr,"[%d]%s %s\n",j->num,j->status,j->cmd);
                                 erase_at(list,i);
                                 freeJob(j);
                                 i--;
                                 size--;
                         }
                         else
-                                fprintf(stderr,"[%d]%d %s %s \n",j->num,j->id,j->status,j->cmd);
+                        fprintf(stderr,"[%d]%d %s %s \n",j->num,j->id,j->status,j->cmd);
                 }
         }
 }
 
-/*Executes a command*/
 void  execute(const char *cmd, char *const params[],int bg,char *list){
         struct job *j = NULL;
         struct job *lastJob;
@@ -82,12 +82,11 @@ void  execute(const char *cmd, char *const params[],int bg,char *list){
         if ( (pid = fork()) < 0)
                 err_sys("fork error");
         else if (pid == 0) {    
-                /*Create signals*/
-                signal(SIGTTOU,SIG_IGN);
-                signal(SIGINT,sigintHandler);
-                signal(SIGTSTP,sigstopHandler);
+        signal(SIGTTOU,SIG_IGN);
+        signal(SIGINT,sigintHandler);
+        signal(SIGTSTP,sigstopHandler);
+
                 setpgid(0,0);
-                
                 execvp(cmd,params);
                 err_ret("couldn't execute: %s", cmd);
                 exit(-1);
@@ -101,7 +100,6 @@ void  execute(const char *cmd, char *const params[],int bg,char *list){
         strcpy(j->status,"Running");
         j->id = pid;
         strcpy(j->cmd, history_get(history_length)->line); 
-
         if(vector_size(list)==0)
                 j->num = 1;
         else{
@@ -117,7 +115,7 @@ void  execute(const char *cmd, char *const params[],int bg,char *list){
                 fprintf(stderr,"[%d]%d %s\n",j->num,j->id,j->cmd);
 }
 
-/*Brings a process to the foreground*/
+/*Brings a job to the foreground*/
 void foreground(struct job *j){
         int status;
         pid_t w;
@@ -130,7 +128,6 @@ void foreground(struct job *j){
                         foreground(j);
                 }
         }
-        /*Handles signal interuptions*/
         else if(WIFEXITED(status)){
                 strcpy(j->status,"Done");
                 if(WEXITSTATUS(status)==255){
@@ -156,6 +153,7 @@ void bgCmd(char *list,int process){
         struct job *currJob = NULL;
         int i;
         int first = 0;
+        /*Print status of each job*/
         if(process==-1){
                 for(i=vector_size(list)-1;i>=0;i--){
                         currJob = (struct job*)vector_get(list,i);
@@ -179,7 +177,7 @@ void bgCmd(char *list,int process){
 void fgCmd(char *list,int process){
         struct job *currJob = NULL;
         int i;
-        int first = 0;
+                int first = 0;
         if(process==-1){
                 for(i=vector_size(list)-1;i>=0;i--){
                         currJob = (struct job*)vector_get(list,i);
@@ -189,6 +187,7 @@ void fgCmd(char *list,int process){
                                 foreground(currJob);
                                 foreground(currJob);
                         }
+
                         else if (strcmp("Running",currJob->status)==0&&!first){
                                 first=1;
                                 foreground(currJob);
@@ -196,6 +195,7 @@ void fgCmd(char *list,int process){
                 }
         }
         else{
+
                 for(i=0;i<vector_size(list);i++){
                         currJob = (struct job*)vector_get(list,i);
                         if (strcmp("Stopped",currJob->status)==0&&process==currJob->num){
@@ -204,7 +204,9 @@ void fgCmd(char *list,int process){
                                 foreground(currJob);
                                 foreground(currJob);
                         }
+
                         else if (strcmp("Running",currJob->status)==0&&process==currJob->num){
+
                                 setpgid(currJob->id,0);
                                 foreground(currJob);
                         }
