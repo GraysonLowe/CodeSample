@@ -1,0 +1,14 @@
+2
+0
+1 
+0e1 0a0 1e2 1b1 2c2
+e
+abc
+aaa
+bbb
+ccc
+aabbbc
+aaccc
+ba
+ca
+aba

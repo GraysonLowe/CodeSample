@@ -1,0 +1,10 @@
+1
+1
+2 3
+1e3 1b2 2a2 2a3 2b3 3a1
+e
+a
+baaaba
+ababab
+aaaab
+bbbb
